@@ -48,3 +48,4 @@ def links(request: Request):
     return urls
 
 import mysql.connector
+
