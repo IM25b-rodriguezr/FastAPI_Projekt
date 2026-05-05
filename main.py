@@ -8,6 +8,7 @@ app = FastAPI()
 PASSWORD = os.getenv('PASWORD')
 DB_NAME = 'taskplaner'
 
+
 mydb = mysql.connector.connect(
     host = 'localhost',
     username = 'root',

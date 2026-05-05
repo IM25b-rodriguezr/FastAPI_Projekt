@@ -2,9 +2,10 @@
 __pycache__/
 *.py[cod]
 *$py.class
+__pycache__
 
 # Environment Variables & Tokens
-.env
+data/.env
 
 # OS generated files
 .DS_Store
