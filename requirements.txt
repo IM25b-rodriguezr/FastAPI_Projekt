@@ -1,0 +1,2 @@
+mysql.connector>=9.7.0
+fastapi>=0.136.1
