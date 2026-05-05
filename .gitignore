@@ -5,7 +5,7 @@ __pycache__/
 __pycache__
 
 # Environment Variables & Tokens
-data/.env
+.env
 
 # OS generated files
 .DS_Store
