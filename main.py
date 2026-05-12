@@ -3,9 +3,11 @@ import os
 import sys
 from fastapi import FastAPI, Request
 import mysql.connector
-from colorama import Fore    
+from colorama import Fore
+from dotenv import load_dotenv
+load_dotenv()
 app = FastAPI()
-PASSWORD = os.getenv('PASWORD')
+PASSWORD = os.getenv('PASSWORD')
 DB_NAME = 'taskplaner'
 
 mydb = mysql.connector.connect(
@@ -26,6 +28,7 @@ mydb = mysql.connector.connect(
     password = PASSWORD,
     database = DB_NAME
 )
+mycursor = mydb.cursor()
 print(f'{Fore.GREEN}Successfully connected to db {mydb}')
 print(Fore.RESET,end='')
 
@@ -46,5 +49,36 @@ def links(request: Request):
                for route in app.routes]
     return urls
 
-import mysql.connector
+@app.get("/benutzer/{BenutzerID}")
+def read_benutzer(BenutzerID: str):
+    mycursor.execute("SELECT * FROM Benutzer WHERE BenutzerID = %s", (BenutzerID,))
+    result = mycursor.fetchone()
+    benutzername = result[1]
+    return {"BenutzerID": BenutzerID, "BenutzerName": benutzername} 
 
+@app.get("/select/{tableName}")
+def read_benutzer(tableName: str):
+    query = "SELECT * FROM %s" % tableName
+    mycursor.execute(query)
+    resp = mycursor.fetchall()
+    result = reformat_response(resp,get_column_names(tableName))
+    return result 
+
+
+def get_column_names(table_name):
+    query = "SHOW COLUMNS FROM %s" % table_name
+    mycursor.execute(query)
+    columns = mycursor.fetchall()
+    column_names = []
+    for column in columns:
+        column_names.append(column[0])
+    return column_names
+
+def reformat_response(response, column_names):
+    result = []
+    for record in response:
+       record_dict = {}
+       for i in range(len(record)):
+           record_dict[column_names[i]] = record[i]
+       result.append(record_dict)     
+    return result
