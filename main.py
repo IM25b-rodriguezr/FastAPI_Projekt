@@ -57,13 +57,19 @@ def read_benutzer(BenutzerID: str):
     return {"BenutzerID": BenutzerID, "BenutzerName": benutzername} 
 
 @app.get("/select/{tableName}")
-def read_benutzer(tableName: str):
-    query = "SELECT * FROM %s" % tableName
+def read_table(tableName: str, q: str | None = None):
+    if q is not None:
+        query = f"SELECT * FROM {tableName} WHERE {tableName}.{tableName}ID = {q}"
+    else: 
+        query = f"SELECT * FROM {tableName}"
     mycursor.execute(query)
     resp = mycursor.fetchall()
     result = reformat_response(resp,get_column_names(tableName))
     return result 
 
+
+
+# Helper functions
 
 def get_column_names(table_name):
     query = "SHOW COLUMNS FROM %s" % table_name
