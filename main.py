@@ -57,9 +57,9 @@ def read_benutzer(BenutzerID: str):
     return {"BenutzerID": BenutzerID, "BenutzerName": benutzername} 
 
 @app.get("/select/{tableName}")
-def read_table(tableName: str, q: str | None = None):
-    if q is not None:
-        query = f"SELECT * FROM {tableName} WHERE {tableName}.{tableName}ID = {q}"
+def read_table(tableName: str, pk: str | None = None):
+    if pk is not None:
+        query = f"SELECT * FROM {tableName} WHERE {tableName}.{tableName}ID = {pk}"
     else: 
         query = f"SELECT * FROM {tableName}"
     mycursor.execute(query)
