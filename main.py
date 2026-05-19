@@ -13,6 +13,7 @@ mydb = mysql.connector.connect(
     username = 'root',
     password = PASSWORD
 )
+
 mycursor = mydb.cursor()
 mycursor.execute('SHOW DATABASES')
 DB_NAMES = [str(db).strip('(),\'') for db in mycursor]
@@ -20,12 +21,14 @@ if all(name != DB_NAME for name in DB_NAMES):
     print(f'{Fore.RED}There is no currently existing db called {DB_NAME} please either change the DB_NAME var or create a new database called {DB_NAME}.')
     print(Fore.RESET,end='')
     sys.exit()
+
 mydb = mysql.connector.connect(
     host = 'localhost',
     username = 'root',
     password = PASSWORD,
     database = DB_NAME
 )
+
 print(f'{Fore.GREEN}Successfully connected to db {mydb}')
 print(Fore.RESET,end='')
 
@@ -46,5 +49,4 @@ def links(request: Request):
                for route in app.routes]
     return urls
 
-import mysql.connector
 
