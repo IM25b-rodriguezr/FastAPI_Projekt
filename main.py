@@ -4,6 +4,7 @@ from fastapi import FastAPI, Request
 import mysql.connector
 from colorama import Fore    
 from dotenv import load_dotenv
+from difflib import SequenceMatcher
 from fastapi.responses import FileResponse
 load_dotenv()
 app = FastAPI()
@@ -84,32 +85,35 @@ def process_cmd(tableName:str, pk: int):
 # UPDATE FUNCTION
 @app.get('/{tableName}/update')
 def process_cmd(tableName:str, pk: int | None = None, attribute_name : str | None =  None, value = None):
-    
-    
-    if not tableName:
-        return MISSING_ARGS_MSG.format(*['table name']*2)
-    mycursor.execute('SHOW TABLES')
-    table_names = [name[0].upper() for name in mycursor]
-    if tableName.upper() not in table_names:
-        return INVALID_TABLE_MSG.format(tableName)
-    if not attribute_name:
-        return MISSING_ARGS_MSG.format(*['attribute name']*2) 
-    if not pk:
-        return MISSING_ARGS_MSG.format(*['primary key']*2)
-    if not value:
-        return MISSING_ARGS_MSG.format(*['values']*2)
-    mycursor.execute(f'SHOW COLUMNS FROM {tableName}')
-    attr_names = [attr[0].upper() for attr in mycursor]
-    attributeName = attribute_name.upper()
-    if attributeName not in attr_names:
-        print(attr_names)
-        return INVALID_TABLE_MSG.format(attribute_name,'attribute name')
-    query = f'UPDATE {tableName} SET {tableName}.{attribute_name} = %s where {tableName}.{tableName}ID = {pk}'
-    mycursor.execute(query,(value,))
+    everything_correct = checks(table_name=tableName,pk =pk,attribute_name=attribute_name,values=value)
+    if isinstance(everything_correct,str):
+        return everything_correct
+    cmd = f'UPDATE {tableName} SET {tableName}.{attribute_name} = %s where {tableName}.{tableName}ID = {pk}'
+    mycursor.execute(cmd,(value,))
     mydb.commit()
-
     return "Erfolgreich aktualisiert"
     
+@app.get('/insert/')
+def insert_cmd(table_name:str = '', values:str = None):
+    values_list = [value.strip('()') for value in values.split(',')]
+    everything_correct = checks(table_name=table_name,needs_attribute_name = False,values=values,needs_pk=False)
+    if isinstance(everything_correct,str):
+        return everything_correct
+    if len(values.strip('()')) != len(values)-2:
+        return 'You did not provide a valid values format. Please ensure that your values are surounded by ().'
+    mycursor.execute(f'SHOW COLUMNS FROM {table_name}')
+    existing_columns = sum(1 for column in mycursor)
+    given_columns = len(values_list)
+    if existing_columns != given_columns:
+        return f'You did not provide the correct amount of columns. The given amount was {given_columns} the needed amount was {existing_columns}'
+    cmd = f'INSERT IGNORE INTO {table_name} VALUES ({('%s,'*existing_columns).rstrip(',')})'
+    mycursor.execute(cmd,tuple(values_list))
+    if not mycursor.rowcount:# if its 0
+        return list(f'{warning[0]} {warning[1]}: {warning[2]}' for warning in mycursor.warnings)
+        #'\n'.join(f'{warning[0]} {warning[1]}: {warning[2]}' for warning in mycursor.warnings) 
+        # only use this if the browser supports \n correctly in a string
+    mydb.commit()
+    return mycursor
 
 # Logic functions
 
@@ -134,3 +138,45 @@ def reformat_response(response, column_names):
 @app.get('/favicon.ico', include_in_schema=False)
 async def favicon():
     return FileResponse('bzz_icon.ico')
+
+def checks(**kwargs) -> bool | str:
+		table_name : str = kwargs.get('table_name')
+		pk : int  = kwargs.get('pk')
+		values = kwargs.get('values')
+		attribute_name = kwargs.get('attribute_name')    
+		ERROR_MSG = 'You did not provide a {} but a {} is required for this command to work.'
+		NOT_VALID_ERROR_MSG = '{} is not a valid {}.'
+		if kwargs.get(f'needs_table_name', True):
+			if not table_name:
+				return ERROR_MSG.format(*['table name']*2)
+			mycursor.execute('SHOW TABLES')
+			table_names = [name[0].upper() for name in mycursor]
+			table_name = table_name.upper()
+			if table_name not in table_names:
+				best_match = return_nearest(table_name,table_names)
+				return f'{NOT_VALID_ERROR_MSG.format(table_name,'table name')}{f' Did you mean {best_match}?' if best_match else ''}'
+		if kwargs.get(f'needs_attribute_name', True):
+			if not attribute_name :
+				return ERROR_MSG.format(*['attribute name']*2) 
+			mycursor.execute(f'SHOW COLUMNS FROM {table_name}')
+			attr_names = [attr[0].upper() for attr in mycursor]
+			attribute_name = attribute_name.upper()
+			if attribute_name not in attr_names:
+				best_match = return_nearest(table_name,table_names)
+				return f'{NOT_VALID_ERROR_MSG.format(attribute_name,'attribute name')}{f' Did you mean {best_match}?' if best_match else ''}'
+		if not pk and kwargs.get(f'needs_pk', True):
+			return ERROR_MSG.format(*['primary key']*2)
+		if not values and kwargs.get(f'needs_values', True):
+			return ERROR_MSG.format(*['values']*2)
+		return True
+
+# super cooler sequence matcher
+def return_nearest(obj_name:str,names_list:list[str]) -> str:
+    best_match = 0
+    best_match_name = ''
+    for name in names_list:
+        match_perc = SequenceMatcher(None,obj_name,name).ratio()
+        if match_perc > best_match:
+            best_match = match_perc
+            best_match_name = name
+    return best_match_name if best_match > 0.25 else ''
