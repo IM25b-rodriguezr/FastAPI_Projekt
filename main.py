@@ -81,6 +81,42 @@ def process_cmd(table_name:str = '', pk: int | None = None,attribute_name : str 
     return mycursor
     
     
+@app.get("/benutzer/{BenutzerID}")
+def read_benutzer(BenutzerID: str):
+    mycursor.execute("SELECT * FROM Benutzer WHERE BenutzerID = %s", (BenutzerID,))
+    result = mycursor.fetchone()
+    benutzername = result[1]
+    return {"BenutzerID": BenutzerID, "BenutzerName": benutzername} 
 
-if __name__ == '__main__':
-    print(process_cmd('Insert','users'))
+@app.get("/select/{tableName}")
+def read_table(tableName: str, pk: str | None = None):
+    if pk is not None:
+        query = f"SELECT * FROM {tableName} WHERE {tableName}.{tableName}ID = {pk}"
+    else: 
+        query = f"SELECT * FROM {tableName}"
+    mycursor.execute(query)
+    resp = mycursor.fetchall()
+    result = reformat_response(resp,get_column_names(tableName))
+    return result 
+
+
+
+# Logic functions
+
+def get_column_names(table_name):
+    query = "SHOW COLUMNS FROM %s" % table_name
+    mycursor.execute(query)
+    columns = mycursor.fetchall()
+    column_names = []
+    for column in columns:
+        column_names.append(column[0])
+    return column_names
+
+def reformat_response(response, column_names):
+    result = []
+    for record in response:
+       record_dict = {}
+       for i in range(len(record)):
+           record_dict[column_names[i]] = record[i]
+       result.append(record_dict)     
+    return result
