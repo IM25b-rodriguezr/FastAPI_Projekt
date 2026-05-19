@@ -49,14 +49,8 @@ def links(request: Request):
                for route in app.routes]
     return urls
 
-@app.get("/benutzer/{BenutzerID}")
-def read_benutzer(BenutzerID: str):
-    mycursor.execute("SELECT * FROM Benutzer WHERE BenutzerID = %s", (BenutzerID,))
-    result = mycursor.fetchone()
-    benutzername = result[1]
-    return {"BenutzerID": BenutzerID, "BenutzerName": benutzername} 
-
-@app.get("/select/{tableName}")
+# SELECT FUNCTION 
+@app.get("/{tableName}/select")
 def read_table(tableName: str, pk: str | None = None):
     if pk is not None:
         query = f"SELECT * FROM {tableName} WHERE {tableName}.{tableName}ID = {pk}"
@@ -67,9 +61,55 @@ def read_table(tableName: str, pk: str | None = None):
     result = reformat_response(resp,get_column_names(tableName))
     return result 
 
+# DELETE FUNCTION
+@app.get("/{tableName}/delete")
+def read_table(tableName: str, pk: str | None = None):
+    query = f"DELETE FROM {tableName} WHERE {tableName}.{tableName}ID = {pk}"
+    mycursor.execute(query)
+    return 'Erfolgreich gelöscht'
 
+# INSERT FUNCTION
+@app.get("/{tableName}/insert")
 
+def read_table(tableName: str, pk: str | None = None):
+    query = f"INSERT INTO {tableName} VALUES ({pk})"
+    mycursor.execute(query)
+    mycursor.fetchall()
+    return '' 
+
+# UPDATE FUNCTION
+@app.get("/{tableName}/update")
+def read_table(tableName: str, attribut: str | None = None, pk: str | None = None, value: str | None = None):
+    if attribut is not None and pk is not None and value is not None:
+        print(get_column_datatype(tableName, attribut))
+        match get_column_datatype(tableName, attribut):
+            case 'int':
+                query = f"UPDATE {tableName} SET {attribut} = {value} WHERE {tableName}ID = {pk}"
+            case "datetime":
+                query = f"UPDATE {tableName} SET {attribut} = \"{value}\" WHERE {tableName}ID = {pk}"
+            case "varchar(255)","varchar(100)", "TEXT":
+                query = f"UPDATE {tableName} SET {attribut} = \"{value}\" WHERE {tableName}ID = {pk}"
+            case "boolean":
+                query = f"UPDATE {tableName} SET {attribut} = {value} WHERE {tableName}ID = {pk}"
+            case "BLOB":
+                return "BLOB values cannot be updated via this endpoint"
+            case "None":
+                return "error"
+        mycursor.execute(query)
+        mycursor.fetchall()
+        return 'Erfolgreich aktualisiert'
+    else:
+        return 'Aktualisierung fehlgeschlagen, sie müssen alle drei Parameter (attribut, pk, value) angeben'
 # Helper functions
+
+def get_column_datatype(table_name, column_name):
+    query = f"SHOW COLUMNS FROM {table_name}"
+    mycursor.execute(query)
+    columns = mycursor.fetchall()
+    for column in columns:
+        if column[0] == column_name:
+            return column[1]
+
 
 def get_column_names(table_name):
     query = "SHOW COLUMNS FROM %s" % table_name
