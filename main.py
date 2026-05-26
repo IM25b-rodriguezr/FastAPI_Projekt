@@ -116,6 +116,21 @@ def insert_cmd(tableName:str , values:str = None):
     mydb.commit()
     return "Erfolgreich eingefügt"
 
+
+@app.get('/view/')
+def read_view():
+    mycursor.execute("""
+    CREATE OR REPLACE VIEW Benutzeraufgaben AS
+    SELECT BENUTZER.BENUTZERNAME, AUFGABE.TITEL, AUFGABE.ORT, AUFGABE.NOTIZ  
+    FROM BENUTZER JOIN AUFGABE
+	ON BENUTZER.BENUTZERID = AUFGABE.BENUTZERID;
+    """)
+    mydb.commit()
+    mycursor.execute("""
+    SELECT * FROM Benutzeraufgaben;
+                     """)
+    return mycursor.fetchall()
+
 # Logic functions
 
 def get_column_names(table_name):
