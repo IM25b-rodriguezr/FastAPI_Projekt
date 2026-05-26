@@ -153,7 +153,7 @@ def checks(**kwargs) -> bool | str:
 			table_name = table_name.upper()
 			if table_name not in table_names:
 				best_match = return_nearest(table_name,table_names)
-				return f'{NOT_VALID_INVALID_TABLE_MSG.format(table_name,'table name')}{f' Did you mean {best_match}?' if best_match else ''}'
+				return f'{INVALID_TABLE_MSG.format(table_name,'table name')}{f' Did you mean {best_match}?' if best_match else ''}'
 		if kwargs.get(f'needs_attribute_name', True):
 			if not attribute_name :
 				return INVALID_TABLE_MSG.format(*['attribute name']*2) 
@@ -162,7 +162,7 @@ def checks(**kwargs) -> bool | str:
 			attribute_name = attribute_name.upper()
 			if attribute_name not in attr_names:
 				best_match = return_nearest(table_name,table_names)
-				return f'{NOT_VALID_INVALID_TABLE_MSG.format(attribute_name,'attribute name')}{f' Did you mean {best_match}?' if best_match else ''}'
+				return f'{INVALID_TABLE_MSG.format(attribute_name,'attribute name')}{f' Did you mean {best_match}?' if best_match else ''}'
 		if not pk and kwargs.get(f'needs_pk', True):
 			return INVALID_TABLE_MSG.format(*['primary key']*2)
 		if not values and kwargs.get(f'needs_values', True):
