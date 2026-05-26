@@ -129,7 +129,7 @@ def read_view():
     mycursor.execute("""
     SELECT * FROM Benutzeraufgaben;
                      """)
-    return mycursor.fetchall()
+    return reformat_response(mycursor.fetchall(),['Benutzername','Titel','Ort','Notiz'])
 
 # Logic functions
 
@@ -142,7 +142,7 @@ def get_column_names(table_name):
         column_names.append(column[0])
     return column_names
 
-def reformat_response(response, column_names):
+def reformat_response(response:list, column_names:list):
     result = []
     for record in response:
        record_dict = {}
@@ -183,6 +183,7 @@ def checks(**kwargs) -> bool | str:
 		if not values and kwargs.get(f'needs_values', True):
 			return INVALID_TABLE_MSG.format(*['values']*2)
 		return True
+
 def return_nearest(word, options):
     best_match = None
     highest_ratio = 0.0
