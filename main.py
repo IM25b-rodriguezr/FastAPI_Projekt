@@ -4,6 +4,7 @@ from fastapi import FastAPI, Request
 import mysql.connector
 from colorama import Fore    
 from dotenv import load_dotenv
+from difflib import SequenceMatcher
 from fastapi.responses import FileResponse
 load_dotenv()
 app = FastAPI()
@@ -144,28 +145,35 @@ def checks(**kwargs) -> bool | str:
 		pk : int  = kwargs.get('pk')
 		values = kwargs.get('values')
 		attribute_name = kwargs.get('attribute_name')    
-		ERROR_MSG = 'You did not provide a {} but a {} is required for this command to work.'
-		NOT_VALID_ERROR_MSG = '{} is not a valid {}.'
 		if kwargs.get(f'needs_table_name', True):
 			if not table_name:
-				return ERROR_MSG.format(*['table name']*2)
+				return INVALID_TABLE_MSG.format(*['table name']*2)
 			mycursor.execute('SHOW TABLES')
 			table_names = [name[0].upper() for name in mycursor]
 			table_name = table_name.upper()
 			if table_name not in table_names:
 				best_match = return_nearest(table_name,table_names)
-				return f'{NOT_VALID_ERROR_MSG.format(table_name,'table name')}{f' Did you mean {best_match}?' if best_match else ''}'
+				return f'{NOT_VALID_INVALID_TABLE_MSG.format(table_name,'table name')}{f' Did you mean {best_match}?' if best_match else ''}'
 		if kwargs.get(f'needs_attribute_name', True):
 			if not attribute_name :
-				return ERROR_MSG.format(*['attribute name']*2) 
+				return INVALID_TABLE_MSG.format(*['attribute name']*2) 
 			mycursor.execute(f'SHOW COLUMNS FROM {table_name}')
 			attr_names = [attr[0].upper() for attr in mycursor]
 			attribute_name = attribute_name.upper()
 			if attribute_name not in attr_names:
 				best_match = return_nearest(table_name,table_names)
-				return f'{NOT_VALID_ERROR_MSG.format(attribute_name,'attribute name')}{f' Did you mean {best_match}?' if best_match else ''}'
+				return f'{NOT_VALID_INVALID_TABLE_MSG.format(attribute_name,'attribute name')}{f' Did you mean {best_match}?' if best_match else ''}'
 		if not pk and kwargs.get(f'needs_pk', True):
-			return ERROR_MSG.format(*['primary key']*2)
+			return INVALID_TABLE_MSG.format(*['primary key']*2)
 		if not values and kwargs.get(f'needs_values', True):
-			return ERROR_MSG.format(*['values']*2)
+			return INVALID_TABLE_MSG.format(*['values']*2)
 		return True
+def return_nearest(word, options):
+    best_match = None
+    highest_ratio = 0.0
+    for option in options:
+        ratio = SequenceMatcher(None, word, option).ratio()
+        if ratio > highest_ratio:
+            highest_ratio = ratio
+            best_match = option
+    return best_match if highest_ratio > 0.5 else None
