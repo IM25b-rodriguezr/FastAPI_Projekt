@@ -175,18 +175,22 @@ def insert_cmd(tableName: str , values: str = None):
 
 
 @app.get('/view/')
-def read_view():
-    
-    #mycursor.execute("""
-    #CREATE OR REPLACE VIEW Benutzeraufgaben AS
-    #SELECT BENUTZER.BENUTZERNAME, AUFGABE.TITEL, AUFGABE.ORT, AUFGABE.NOTIZ  
-    #FROM BENUTZER JOIN AUFGABE
-	#ON BENUTZER.BENUTZERID = AUFGABE.BENUTZERID;
-    #""")
+def read_view() -> list[dict[str]]:
+    """Returns a preset SQL view.
+
+    Returns:
+        list[dict[str, Any]]: The data returned from the view.
+    """
+    mycursor.execute("""
+    CREATE OR REPLACE VIEW Benutzeraufgaben AS
+    SELECT BENUTZER.BENUTZERNAME, AUFGABE.TITEL, AUFGABE.ORT, AUFGABE.NOTIZ  
+    FROM BENUTZER JOIN AUFGABE
+	ON BENUTZER.BENUTZERID = AUFGABE.BENUTZERID;
+    """)
     mydb.commit()
-    #mycursor.execute("""
-    #SELECT * FROM Benutzeraufgaben;
-     #                """)
+    mycursor.execute("""
+    SELECT * FROM Benutzeraufgaben;
+                    """)
     return reformat_response(mycursor.fetchall(),['Benutzername','Titel','Ort','Notiz'])
 
 # Logic functions
@@ -263,8 +267,6 @@ def checks(**kwargs) -> bool | str:
         table_name = table_name.upper()
         if table_name not in table_names:
             best_match = return_nearest(table_name,table_names)
-            print(app.root_path)
-            print(app.root_path_in_servers)
             needed = 'table_name'
             return f'{NOT_VALID_ERROR_MSG.format(table_name,'table name')}{f' Did you mean {best_match}? Fixed link: {re.sub(f'{needed}='+r'(\w|%27)*',f'{needed}={best_match}',called_with)}' if best_match and called_with else ''} '
     if kwargs.get(f'needs_attribute_name', True):
